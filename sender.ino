@@ -1,6 +1,6 @@
 #include <SPI.h>
 #include <DW1000.h>
-
+#include <ArduinoJson>
 // connection pins
 const uint8_t PIN_RST = 9; // reset pin
 const uint8_t PIN_IRQ = 2; // irq pin
@@ -22,6 +22,8 @@ int xPos = 0;
 int yPos = 0;
 int buttonState = 0;
 
+StaticJsonBuffer<200> jsonBuffer;
+JsonObject& root  = jsonBuffer.createObject();
 void setup() {
   // DEBUG monitoring
   Serial.begin(9600);
@@ -69,8 +71,8 @@ void transmitter() {
   Serial.print("Transmitting packet ... #"); Serial.println(sentNum);
   DW1000.newTransmit();
   DW1000.setDefaults();
-  
-  String msg = ; msg += sentNum; msg += sentNum; msg += buttonState;
+
+
   DW1000.setData(msg);
   // delay sending the message for the given amount
   DW1000Time deltaTime = DW1000Time(10, DW1000Time::MILLISECONDS);
@@ -86,6 +88,11 @@ void loop() {
   xPos = analogRead(joyX);
   yPos = analogRead(joyY);
   buttonState = digitalRead(joyButton);
+  root["verti"] = map(xPos, 0, 1023, 900, 2100);
+  root["hori"] = map(yPos, 0, 1023, 900, 2100);
+  root["state"] = buttonState;
+  String jsonStr;
+  root.printTo(jsonStr);
   // continue on success confirmation
   // (we are here after the given amount of send delay time has passed)
   sentAck = false;
