@@ -1,7 +1,7 @@
 
 #include <SPI.h>
 #include <DW1000.h>
-#include <ArduinoJson>
+#include <ArduinoJson.h>
 
 // Motor
 #define leftMotor1 7
@@ -19,6 +19,7 @@ volatile boolean received = false;
 volatile boolean error = false;
 volatile int16_t numReceived = 0; // todo check int type
 String message;
+int threshold = 550;
 
 void setup() {
   // motor
@@ -79,10 +80,37 @@ void receiver() {
 
 void loop() {
   // enter on confirmation of ISR status change (successfully received)
+  StaticJsonBuffer<200> jsonBuffer;
   if (received) {
     numReceived++;
     // get data as string
     DW1000.getData(message);
+    JsonObject& root = jsonBuffer.parseObject(message);
+    if (!root.success()) {
+      Serial.println("parseObject() failed");
+      return;
+    }
+    int verti = root["x"];
+    int hori = root["y"];
+    
+    if (verti > 600) {
+      foward();
+    } else if (verti < 400) {
+      backward();
+    } else if (hori > 600) {
+      turnLeft();
+    } else if (hori < 400) {
+      turnRight();
+    } else {
+      Stop();
+    }
+
+
+    
+    Serial.println(verti);
+    Serial.println(hori);
+
+    
     Serial.print("Received message ... #"); Serial.println(numReceived);
     Serial.print("Data is ... "); Serial.println(message);
     Serial.print("FP power is [dBm] ... "); Serial.println(DW1000.getFirstPathPower());
@@ -103,7 +131,15 @@ void foward() {
     digitalWrite(leftMotor2, LOW);
     digitalWrite(rightMotor1, HIGH);
     digitalWrite(rightMotor2, LOW);
-    delay(500);
+    delay(10);
+}
+
+void backward() {
+    digitalWrite(leftMotor1, LOW);
+    digitalWrite(leftMotor2, HIGH);
+    digitalWrite(rightMotor1, LOW);
+    digitalWrite(rightMotor2, HIGH);
+    delay(10);
 }
 
 void turnLeft() {
@@ -111,7 +147,7 @@ void turnLeft() {
     digitalWrite(leftMotor2, LOW);
     digitalWrite(rightMotor1, HIGH);
     digitalWrite(rightMotor2, LOW);
-    delay(500);
+    delay(10);
 }
 
 void turnRight() {
@@ -119,7 +155,7 @@ void turnRight() {
     digitalWrite(leftMotor2, LOW);
     digitalWrite(rightMotor1, LOW);
     digitalWrite(rightMotor2, LOW);
-    delay(500);
+    delay(10);
 }
 
 void turnAround() {
@@ -133,13 +169,13 @@ void turnAround() {
     digitalWrite(leftMotor2, LOW);
     digitalWrite(rightMotor1, LOW);
     digitalWrite(rightMotor2, LOW);
-    delay(500);
+    delay(10);
 }
 
-void stop() {
+void Stop() {
     digitalWrite(leftMotor1, LOW);
     digitalWrite(leftMotor2, LOW);
     digitalWrite(rightMotor1, LOW);
     digitalWrite(rightMotor2, LOW);
-    delay(500);
+    delay(10);
 }

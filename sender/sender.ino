@@ -1,6 +1,6 @@
 #include <SPI.h>
 #include <DW1000.h>
-#include <ArduinoJson>
+#include <ArduinoJson.h>
 // connection pins
 const uint8_t PIN_RST = 9; // reset pin
 const uint8_t PIN_IRQ = 2; // irq pin
@@ -11,6 +11,7 @@ boolean sent = false;
 volatile boolean sentAck = false;
 volatile unsigned long delaySent = 0;
 int16_t sentNum = 0; // todo check int type
+String jsonStr;
 DW1000Time sentTime;
 
 //Joystick
@@ -21,9 +22,6 @@ int joyButton = 2;
 int xPos = 0;
 int yPos = 0;
 int buttonState = 0;
-
-StaticJsonBuffer<200> jsonBuffer;
-JsonObject& root  = jsonBuffer.createObject();
 void setup() {
   // DEBUG monitoring
   Serial.begin(9600);
@@ -71,39 +69,42 @@ void transmitter() {
   Serial.print("Transmitting packet ... #"); Serial.println(sentNum);
   DW1000.newTransmit();
   DW1000.setDefaults();
-
-
-  DW1000.setData(msg);
+  
+  //String msg = "Hello DW1000, it's #"; msg += sentNum;
+  DW1000.setData(jsonStr);
   // delay sending the message for the given amount
   DW1000Time deltaTime = DW1000Time(10, DW1000Time::MILLISECONDS);
   DW1000.setDelay(deltaTime);
   DW1000.startTransmit();
   delaySent = millis();
+  jsonStr = "";
 }
 
 void loop() {
+  StaticJsonBuffer<200> jsonBuffer;
+  JsonObject& root  = jsonBuffer.createObject();
   if (!sentAck) {
     return;
   }
   xPos = analogRead(joyX);
   yPos = analogRead(joyY);
-  buttonState = digitalRead(joyButton);
-  root["verti"] = map(xPos, 0, 1023, 900, 2100);
-  root["hori"] = map(yPos, 0, 1023, 900, 2100);
-  root["state"] = buttonState;
-  String jsonStr;
+//  buttonState = digitalRead(joyButton);
+//  root["verti"] = map(xPos, 0, 1023, 900, 2100);
+//  root["hori"] = map(yPos, 0, 1023, 900, 2100);
+//  root["state"] = buttonState;
+  root["x"] = xPos;
+  root["y"] = yPos;
   root.printTo(jsonStr);
-  // continue on success confirmation
-  // (we are here after the given amount of send delay time has passed)
+  Serial.println(jsonStr);
   sentAck = false;
   // update and print some information about the sent message
   Serial.print("ARDUINO delay sent [ms] ... "); Serial.println(millis() - delaySent);
   DW1000Time newSentTime;
   DW1000.getTransmitTimestamp(newSentTime);
-  Serial.print("Processed packet ... #"); Serial.println(sentNum);
-  Serial.print("Sent timestamp ... "); Serial.println(newSentTime.getAsMicroSeconds());
-  // note: delta is just for simple demo as not correct on system time counter wrap-around
-  Serial.print("DW1000 delta send time [ms] ... "); Serial.println((newSentTime.getAsMicroSeconds() - sentTime.getAsMicroSeconds()) * 1.0e-3);
+//  Serial.print("Processed packet ... #"); Serial.println(sentNum);
+//  Serial.print("Sent timestamp ... "); Serial.println(newSentTime.getAsMicroSeconds());
+//   note: delta is just for simple demo as not correct on system time counter wrap-around
+//  Serial.print("DW1000 delta send time [ms] ... "); Serial.println((newSentTime.getAsMicroSeconds() - sentTime.getAsMicroSeconds()) * 1.0e-3);
   sentTime = newSentTime;
   sentNum++;
   // again, transmit some data
