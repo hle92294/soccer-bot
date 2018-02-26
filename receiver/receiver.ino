@@ -4,22 +4,25 @@
 #include <ArduinoJson.h>
 
 // Motor
-#define leftMotor1 7
-#define leftMotor2 6
-#define rightMotor1 5
-#define rightMotor2 8
+#define leftMotor1 25
+#define leftMotor2 26
+#define rightMotor1 32
+#define rightMotor2 33
 
 // connection pins
-const uint8_t PIN_RST = 9; // reset pin
-const uint8_t PIN_IRQ = 2; // irq pin
-const uint8_t PIN_SS = SS; // spi select pin
+const uint8_t PIN_SCK = 18;
+const uint8_t PIN_MOSI = 23;
+const uint8_t PIN_MISO = 19;
+const uint8_t PIN_SS = 2;
+const uint8_t PIN_RST = 15;
+const uint8_t PIN_IRQ = 17;
 
 // DEBUG packet sent status and count
 volatile boolean received = false;
 volatile boolean error = false;
 volatile int16_t numReceived = 0; // todo check int type
 String message;
-int threshold = 550;
+int _val = 0;
 
 void setup() {
   // motor
@@ -92,14 +95,15 @@ void loop() {
     }
     int verti = root["x"];
     int hori = root["y"];
+    int state = root["b"];
     
-    if (verti > 600) {
+    if (verti > 2000) {
       foward();
-    } else if (verti < 400) {
+    } else if (verti < 1500) {
       backward();
-    } else if (hori > 600) {
+    } else if (hori > 2000) {
       turnLeft();
-    } else if (hori < 400) {
+    } else if (hori < 1500) {
       turnRight();
     } else {
       Stop();
@@ -109,13 +113,14 @@ void loop() {
     
     Serial.println(verti);
     Serial.println(hori);
+    Serial.println(state);
 
     
-    Serial.print("Received message ... #"); Serial.println(numReceived);
-    Serial.print("Data is ... "); Serial.println(message);
-    Serial.print("FP power is [dBm] ... "); Serial.println(DW1000.getFirstPathPower());
-    Serial.print("RX power is [dBm] ... "); Serial.println(DW1000.getReceivePower());
-    Serial.print("Signal quality is ... "); Serial.println(DW1000.getReceiveQuality());
+//    Serial.print("Received message ... #"); Serial.println(numReceived);
+//    Serial.print("Data is ... "); Serial.println(message);
+//    Serial.print("FP power is [dBm] ... "); Serial.println(DW1000.getFirstPathPower());
+//    Serial.print("RX power is [dBm] ... "); Serial.println(DW1000.getReceivePower());
+//    Serial.print("Signal quality is ... "); Serial.println(DW1000.getReceiveQuality());
     received = false;
   }
   if (error) {
@@ -124,6 +129,7 @@ void loop() {
     DW1000.getData(message);
     Serial.print("Error data is ... "); Serial.println(message);
   }
+  delay(100);
 }
 
 void foward() {

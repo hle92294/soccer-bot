@@ -1,10 +1,24 @@
 #include <SPI.h>
 #include <DW1000.h>
 #include <ArduinoJson.h>
+
+
+#define ANALOG_PIN_0  34 //Y 
+#define ANALOG_PIN_1  35 //X
+#define BUTTON_PIN    4 //button
+
 // connection pins
-const uint8_t PIN_RST = 9; // reset pin
-const uint8_t PIN_IRQ = 2; // irq pin
-const uint8_t PIN_SS = SS; // spi select pin
+const uint8_t PIN_SCK = 18;
+const uint8_t PIN_MOSI = 23;
+const uint8_t PIN_MISO = 19;
+const uint8_t PIN_SS = 2;
+const uint8_t PIN_RST = 15;
+const uint8_t PIN_IRQ = 17;
+
+
+// const uint8_t PIN_RST = 9; // reset pin
+// const uint8_t PIN_IRQ = 2; // irq pin
+// const uint8_t PIN_SS = SS; // spi select pin
 
 // DEBUG packet sent status and count
 boolean sent = false;
@@ -15,13 +29,14 @@ String jsonStr;
 DW1000Time sentTime;
 
 //Joystick
-int joyX = A1;
-int joyY = A0;
-int joyButton = 2;
+int joyX = ANALOG_PIN_1;
+int joyY = ANALOG_PIN_0;
+int joyButton = BUTTON_PIN;
 
 int xPos = 0;
 int yPos = 0;
 int buttonState = 0;
+
 void setup() {
   // DEBUG monitoring
   Serial.begin(9600);
@@ -88,12 +103,11 @@ void loop() {
   }
   xPos = analogRead(joyX);
   yPos = analogRead(joyY);
-//  buttonState = digitalRead(joyButton);
-//  root["verti"] = map(xPos, 0, 1023, 900, 2100);
-//  root["hori"] = map(yPos, 0, 1023, 900, 2100);
-//  root["state"] = buttonState;
+  buttonState = digitalRead(joyButton);
   root["x"] = xPos;
   root["y"] = yPos;
+  root["b"] = buttonState;
+  
   root.printTo(jsonStr);
   Serial.println(jsonStr);
   sentAck = false;
@@ -109,4 +123,5 @@ void loop() {
   sentNum++;
   // again, transmit some data
   transmitter();
+  delay(100);
 }
